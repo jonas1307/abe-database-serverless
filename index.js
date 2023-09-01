@@ -4,9 +4,11 @@ const {
   GetCommand,
   PutCommand,
   UpdateCommand,
+  ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const express = require("express");
 const serverless = require("serverless-http");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 
@@ -17,6 +19,31 @@ const dynamoDbClient = DynamoDBDocumentClient.from(client);
 
 app.use(express.json());
 
+// OBTER TODAS PESQUISAS
+app.get("/polls", async function (req, res) {
+  const command = {
+    TableName: POLLS_TABLE,
+    FilterExpression: "enabled = :enabled",
+    ExpressionAttributeValues: {
+      ":enabled": true,
+    },
+  };
+
+  try {
+    const response = await dynamoDbClient.send(new ScanCommand(command));
+
+    if (response) {
+      res.json(response.Items);
+    } else {
+      res.status(404).json({ error: "Could not find polls in the database" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Could not retreive poll", error: error });
+  }
+});
+
+// OBTER PESQUISA POR ID
 app.get("/polls/:pollId", async function (req, res) {
   const params = {
     TableName: POLLS_TABLE,
@@ -41,16 +68,16 @@ app.get("/polls/:pollId", async function (req, res) {
   }
 });
 
+// CRIAR PESQUISA
 app.post("/polls", async function (req, res) {
-  const { pollId, question, options } = req.body;
-  if (typeof pollId !== "string") {
-    res.status(400).json({ error: '"pollId" must be a string' });
-  } else if (typeof question !== "string") {
+  const { question, options } = req.body;
+  if (typeof question !== "string") {
     res.status(400).json({ error: '"question" must be a string' });
   } else if (typeof options !== "object") {
     res.status(400).json({ error: '"options" must be a array of strings' });
   }
 
+  const pollId = uuidv4();
   const databaseOptions = options.map((x) => ({ label: x, answers: 0 }));
 
   const params = {
@@ -58,19 +85,21 @@ app.post("/polls", async function (req, res) {
     Item: {
       pollId: pollId,
       question: question,
+      enabled: true,
       options: databaseOptions,
     },
   };
 
   try {
     await dynamoDbClient.send(new PutCommand(params));
-    res.json({ pollId, question, options: databaseOptions });
+    res.json({ pollId, question, enabled: true, options: databaseOptions });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Could not create poll", error: error });
   }
 });
 
+// CRIAR RESPOSTA
 app.post("/votes", async function (req, res) {
   const { pollId, label } = req.body;
   if (typeof pollId !== "string") {
