@@ -142,9 +142,7 @@ app.post("/votes", async function (req, res) {
         ":options": options,
       },
     };
-
-    await dynamoDbClient.send(new UpdateCommand(params));
-    res.json({ message: "ok" });
+    res.json(Item);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Could not create vote", error: error });
