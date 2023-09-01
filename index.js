@@ -142,6 +142,8 @@ app.post("/votes", async function (req, res) {
         ":options": options,
       },
     };
+
+    await dynamoDbClient.send(new UpdateCommand(params));
     res.json(Item);
   } catch (error) {
     console.log(error);
