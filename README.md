@@ -10,6 +10,19 @@ authorLink: 'https://github.com/serverless'
 authorName: 'Serverless, inc.'
 authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
 -->
+# abe-database-serverless
+
+Trabalho prático da disciplina de Arquitetura de BackEnd - Pós-Graduação em Arquitetura de Soluções da **PUC Minas**
+
+Nome dos integrantes do grupo:
+
+- Leandro Moreira da Silva
+- Leon Wagner Farias de Souza
+- Jonas Lima de Amorim
+- Junia Almeida Matos Boechat
+- Samara Luiza da Silva
+
+
 
 # Serverless Framework Node Express API on AWS
 
