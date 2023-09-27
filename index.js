@@ -20,20 +20,18 @@ const dynamoDbClient = DynamoDBDocumentClient.from(client);
 app.use(express.json());
 
 const authorization = (req, res, next) => {
-  const token = req.header("x-authorization");
+  const token = req.header("Authorization");
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: "Access denied. No token was provided." });
+    return res.status(401).json({ message: "Access denied" });
   }
-  if (token === "Bearer XPTO") {
+  if (token === "Bearer 1") {
     next();
+  } else if (token === "Bearer 2") {
+    return res.status(403).json({
+      message: "User has no access to the requested resource",
+    });
   } else {
-    return res
-      .status(403)
-      .json({
-        message: "Access denied. User has no access to the requested resource.",
-      });
+    return res.status(401).json({ message: "Access denied" });
   }
 };
 
