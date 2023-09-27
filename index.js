@@ -19,8 +19,26 @@ const dynamoDbClient = DynamoDBDocumentClient.from(client);
 
 app.use(express.json());
 
+const authorization = (req, res, next) => {
+  const token = req.header("x-authorization");
+  if (!token) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. No token was provided." });
+  }
+  if (token === "Bearer XPTO") {
+    next();
+  } else {
+    return res
+      .status(403)
+      .json({
+        message: "Access denied. User has no access to the requested resource.",
+      });
+  }
+};
+
 // OBTER TODAS PESQUISAS
-app.get("/polls", async function (req, res) {
+app.get("/polls", [authorization], async function (req, res) {
   const command = {
     TableName: POLLS_TABLE,
     FilterExpression: "enabled = :enabled",
@@ -44,7 +62,7 @@ app.get("/polls", async function (req, res) {
 });
 
 // OBTER PESQUISA POR ID
-app.get("/polls/:pollId", async function (req, res) {
+app.get("/polls/:pollId", [authorization], async function (req, res) {
   const params = {
     TableName: POLLS_TABLE,
     Key: {
@@ -69,7 +87,7 @@ app.get("/polls/:pollId", async function (req, res) {
 });
 
 // CRIAR PESQUISA
-app.post("/polls", async function (req, res) {
+app.post("/polls", [authorization], async function (req, res) {
   const { question, options } = req.body;
   if (typeof question !== "string") {
     res.status(400).json({ message: '"question" must be a string' });
@@ -100,7 +118,7 @@ app.post("/polls", async function (req, res) {
 });
 
 // CRIAR RESPOSTA
-app.post("/votes", async function (req, res) {
+app.post("/votes", [authorization], async function (req, res) {
   const { pollId, label } = req.body;
   if (typeof pollId !== "string") {
     res.status(400).json({ message: '"pollId" must be a string' });
