@@ -4,6 +4,7 @@ const {
   GetCommand,
   PutCommand,
   UpdateCommand,
+  DeleteCommand,
   ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const express = require("express");
@@ -115,8 +116,8 @@ app.post("/polls", [authorization], async function (req, res) {
   }
 });
 
-// CRIAR RESPOSTA
-app.post("/votes", [authorization], async function (req, res) {
+// ALTERAR PESQUISA
+app.put("/polls", [authorization], async function (req, res) {
   const { pollId, label } = req.body;
   if (typeof pollId !== "string") {
     res.status(400).json({ message: '"pollId" must be a string' });
@@ -164,6 +165,32 @@ app.post("/votes", [authorization], async function (req, res) {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Could not create vote", error: error });
+  }
+});
+
+// DELETAR PESQUISA
+app.delete("/polls/:pollId", [authorization], async function (req, res) {
+  const params = {
+    TableName: POLLS_TABLE,
+    Key: {
+      pollId: req.params.pollId,
+    },
+  };
+
+  try {
+    const { Item } = await dynamoDbClient.send(new GetCommand(params));
+
+    if (Item) {
+      await dynamoDbClient.send(new DeleteCommand(params));
+      res.json(Item);
+    } else {
+      res
+        .status(404)
+        .json({ message: 'Could not find poll with provided "pollId"' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Could not delete poll", error: error });
   }
 });
 
