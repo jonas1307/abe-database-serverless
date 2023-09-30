@@ -18,6 +18,8 @@ const VOTES_TABLE = process.env.VOTES_TABLE;
 const client = new DynamoDBClient();
 const dynamoDbClient = DynamoDBDocumentClient.from(client);
 
+const HOST = "https://rp6w0qdem1.execute-api.us-east-1.amazonaws.com/"
+
 app.use(express.json());
 
 const authorization = (req, res, next) => {
@@ -37,7 +39,7 @@ const authorization = (req, res, next) => {
 };
 
 // OBTER TODAS PESQUISAS
-app.get("/polls", [authorization], async function (req, res) {
+app.get("/v1/polls", [authorization], async function (req, res) {
   const command = {
     TableName: POLLS_TABLE,
     FilterExpression: "enabled = :enabled",
@@ -50,18 +52,48 @@ app.get("/polls", [authorization], async function (req, res) {
     const response = await dynamoDbClient.send(new ScanCommand(command));
 
     if (response) {
+      jsonLinks = "{ links: [ { rel: , href: } ]}"
+
+
       res.json(response.Items);
     } else {
       res.status(404).json({ message: "Could not find polls in the database" });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Could not retreive poll", error: error });
+    res.status(500).json({ message: "Could not retrieve poll", error: error });
+  }
+});
+
+
+app.get("/v2/polls", [authorization], async function (req, res) {
+  const command = {
+    TableName: POLLS_TABLE,
+    FilterExpression: "enabled = :enabled",
+    ExpressionAttributeValues: {
+      ":enabled": true,
+    },
+  };
+
+  try {
+    const response = await dynamoDbClient.send(new ScanCommand(command));
+
+    if (response) {
+      jsonLinks = "{ links: [ { rel: , href: } ]}"
+
+
+      res.json(response.Items);
+    } else {
+      res.status(404).json({ message: "Could not find polls in the database" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Could not retrieve poll", error: error });
   }
 });
 
 // OBTER PESQUISA POR ID
-app.get("/polls/:pollId", [authorization], async function (req, res) {
+app.get("/v1/polls/:pollId", [authorization], async function (req, res) {
   const params = {
     TableName: POLLS_TABLE,
     Key: {
@@ -73,6 +105,10 @@ app.get("/polls/:pollId", [authorization], async function (req, res) {
     const { Item } = await dynamoDbClient.send(new GetCommand(params));
     if (Item) {
       const { pollId, name } = Item;
+
+      jsonLinks = "{ links: [ { rel:delete , href: /polls/\ Item.pollId } ]}"
+
+
       res.json(Item);
     } else {
       res
@@ -81,12 +117,12 @@ app.get("/polls/:pollId", [authorization], async function (req, res) {
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Could not retreive poll", error: error });
+    res.status(500).json({ message: "Could not retrieve poll", error: error });
   }
 });
 
 // CRIAR PESQUISA
-app.post("/polls", [authorization], async function (req, res) {
+app.post("/v1/polls", [authorization], async function (req, res) {
   const { question, options } = req.body;
   if (typeof question !== "string") {
     res.status(400).json({ message: '"question" must be a string' });
@@ -117,7 +153,7 @@ app.post("/polls", [authorization], async function (req, res) {
 });
 
 // ALTERAR PESQUISA
-app.put("/polls", [authorization], async function (req, res) {
+app.put("/v1/polls", [authorization], async function (req, res) {
   const { pollId, label } = req.body;
   if (typeof pollId !== "string") {
     res.status(400).json({ message: '"pollId" must be a string' });
@@ -169,7 +205,7 @@ app.put("/polls", [authorization], async function (req, res) {
 });
 
 // DELETAR PESQUISA
-app.delete("/polls/:pollId", [authorization], async function (req, res) {
+app.delete("/v1/polls/:pollId", [authorization], async function (req, res) {
   const params = {
     TableName: POLLS_TABLE,
     Key: {
